@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pp_tracker/components/navbar.dart';
 import 'package:pp_tracker/pages/calendar.dart';
 import 'package:pp_tracker/pages/landing_page.dart';
+import 'package:pp_tracker/pages/blog_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +20,7 @@ class _HomePageState extends State<HomePage> {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
-          end: Alignment.topRight,
+          end: Alignment.bottomRight,
           colors: [Color.fromARGB(255, 255, 228, 244), Color.fromARGB(255, 254, 249, 223)],
         ),
       ),
@@ -36,7 +37,7 @@ class _HomePageState extends State<HomePage> {
           children: const [
             LandingPage(),
             CalendarPage(),
-            Center(child: Text('Statistics Page')),
+            BlogPage(), // Replaced placeholder with the new Health Blog page
             Center(child: Text('Settings Page')),
           ],
         ),
