@@ -240,7 +240,7 @@ class UserModel extends ChangeNotifier {
 
   void _seedDemoData() {
     final now = DateTime.now();
-    _currentCycleStart = _key(now).subtract(const Duration(days: 9));
+    _currentCycleStart = _key(now).subtract(const Duration(days: 11));
 
     // A few realistic past cycles for averages & regularity.
     var anchor = _currentCycleStart;
