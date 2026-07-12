@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "322486957441",
+    "project_id": "petal-a1290",
+    "storage_bucket": "petal-a1290.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322486957441:android:92f638ab9d1c5e339ae480",
+        "android_client_info": {
+          "package_name": "com.example.petal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "322486957441-bv75ouu9630kbqe4auddkplej8ptjebp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnZ7BYsjzKDbrG6KIxZw9MNPVKY1N4IDY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "322486957441-bv75ouu9630kbqe4auddkplej8ptjebp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

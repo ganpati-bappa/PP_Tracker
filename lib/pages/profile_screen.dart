@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pp_tracker/components/app_card.dart';
+import 'package:pp_tracker/models/blog/app_user.dart';
 import 'package:pp_tracker/models/user_model.dart';
+import 'package:pp_tracker/state/auth_controller.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -32,6 +34,9 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xl),
                   const SectionHeader(title: 'Data & privacy'),
                   _DataActions(),
+                  const SizedBox(height: AppSpacing.xl),
+                  const SectionHeader(title: 'Account'),
+                  const _AccountActions(),
                 ]),
               ),
             ),
@@ -46,6 +51,7 @@ class _Header extends StatelessWidget {
   const _Header();
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthController>().currentUser;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.lg),
@@ -53,30 +59,73 @@ class _Header extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDeep],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.person_rounded,
-                  color: Colors.white, size: 30),
-            ),
+            _Avatar(user: user),
             const SizedBox(width: AppSpacing.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Your profile', style: AppText.label),
-                Text('Welcome back', style: AppText.h1),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your profile', style: AppText.label),
+                  Text(
+                    user?.displayName ?? 'Welcome back',
+                    style: AppText.h1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (user?.email != null)
+                    Text(user!.email!,
+                        style: AppText.caption,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis)
+                  else if (user?.isAnonymous ?? false)
+                    Text('Guest — sign in to sync your data',
+                        style: AppText.caption),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  final AppUser? user;
+  const _Avatar({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = user?.avatarUrl;
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDeep],
+        ),
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: (avatarUrl != null && avatarUrl.isNotEmpty)
+          ? Image.network(
+              avatarUrl,
+              fit: BoxFit.cover,
+              width: 56,
+              height: 56,
+              errorBuilder: (_, __, ___) => _initialsOrIcon(),
+            )
+          : _initialsOrIcon(),
+    );
+  }
+
+  Widget _initialsOrIcon() {
+    if (user != null && !user!.isAnonymous) {
+      return Text(user!.initials,
+          style: AppText.h3.copyWith(color: Colors.white));
+    }
+    return const Icon(Icons.person_rounded, color: Colors.white, size: 30);
   }
 }
 
@@ -343,6 +392,63 @@ class _DataActions extends StatelessWidget {
           Divider(height: AppSpacing.lg, color: AppColors.divider),
           _ActionRow(icon: Icons.lock_rounded, label: 'Privacy & security'),
         ],
+      ),
+    );
+  }
+}
+
+class _AccountActions extends StatelessWidget {
+  const _AccountActions();
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final auth = context.read<AuthController>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Sign out?', style: AppText.h3),
+        content: Text(
+          auth.isGuest
+              ? 'You\'re using a guest account. Your local data stays on this '
+                  'device. Sign out anyway?'
+              : 'You can sign back in anytime with Google.',
+          style: AppText.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel',
+                style: AppText.label.copyWith(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Sign out',
+                style: AppText.label.copyWith(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await auth.signOut();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        onTap: () => _confirmSignOut(context),
+        child: Row(
+          children: [
+            const Icon(Icons.logout_rounded,
+                color: AppColors.danger, size: 22),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text('Sign out',
+                  style: AppText.bodyStrong
+                      .copyWith(color: AppColors.danger)),
+            ),
+          ],
+        ),
       ),
     );
   }

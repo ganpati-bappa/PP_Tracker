@@ -11,29 +11,33 @@ Future<void> _showSheet(
   String? subtitle,
   required Widget child,
 }) {
+  final userModel = context.read<UserModel>();
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.surface,
-    builder: (_) => Padding(
-      padding: EdgeInsets.only(
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.xs,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppText.h1),
-          if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.xxs),
-            Text(subtitle, style: AppText.body),
+    builder: (_) => ChangeNotifierProvider.value(
+      value: userModel,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.xs,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AppText.h1),
+            if (subtitle != null) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              Text(subtitle, style: AppText.body),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            child,
           ],
-          const SizedBox(height: AppSpacing.lg),
-          child,
-        ],
+        ),
       ),
     ),
   );

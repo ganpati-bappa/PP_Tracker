@@ -51,8 +51,9 @@ class _BlogHubScreenState extends State<BlogHubScreen> {
   void _openDetail(BuildContext context, Blog blog) {
     final controller = context.read<BlogController>();
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => BlogDetailScreen(blog: blog)))
-        .then((_) => controller.refreshContinueReading());
+        .push(MaterialPageRoute(builder: (_) => ChangeNotifierProvider.value(
+        value: controller,
+        child: BlogDetailScreen(blog: blog)))).then((_) => controller.refreshContinueReading());
   }
 
   @override
@@ -116,17 +117,22 @@ class _BlogHubScreenState extends State<BlogHubScreen> {
             _circleButton(
               icon: Icons.add_rounded,
               onTap: () {
-                // Future: Check auth and roles here
+                final blogController = context.read<BlogController>();
                 Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const BlogCreateScreen()));
+                    builder: (_) => ChangeNotifierProvider.value(
+                        value: blogController,
+                        child: const BlogCreateScreen())));
               },
             ),
             const SizedBox(width: AppSpacing.sm),
             _circleButton(
               icon: Icons.bookmark_border_rounded,
               onTap: () {
+                final blogController = context.read<BlogController>();
                 Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const BookmarksScreen()));
+                    builder: (_) => ChangeNotifierProvider.value(
+                        value: blogController,
+                        child: const BookmarksScreen())));
               },
             ),
           ],

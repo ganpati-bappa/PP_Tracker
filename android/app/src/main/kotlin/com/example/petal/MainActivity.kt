@@ -1,4 +1,4 @@
-package com.example.pp_tracker
+package com.example.petal
 
 import io.flutter.embedding.android.FlutterActivity
 

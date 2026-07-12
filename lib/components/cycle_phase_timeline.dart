@@ -81,7 +81,7 @@ class CyclePhaseTimeline extends StatelessWidget {
                         duration: AppDuration.slow,
                         curve: Curves.easeOutCubic,
                         builder: (context, v, child) => Transform.translate(
-                          offset: Offset((width - 18) * v, 0),
+                          offset: Offset((width - 18) * v, -12),
                           child: child,
                         ),
                         child: Center(
