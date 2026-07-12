@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:pp_tracker/components/app_card.dart';
 import 'package:pp_tracker/models/blog/blog.dart';
 import 'package:pp_tracker/models/blog/comment.dart';
 import 'package:pp_tracker/repositories/blog_repository.dart';
+import 'package:pp_tracker/state/auth_controller.dart';
 import 'package:pp_tracker/state/blog_controller.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
@@ -79,6 +81,8 @@ class _CommentSectionState extends State<CommentSection> {
       parentCommentId: _replyingTo?.id,
     );
     if (!mounted) return;
+    // Keep the user's `comments` rollup on their users-collection doc in sync.
+    context.read<AuthController>().recordCommentCreated();
     _composer.clear();
     FocusScope.of(context).unfocus();
     final replyingToId = _replyingTo?.id;

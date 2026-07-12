@@ -12,11 +12,15 @@ import 'package:pp_tracker/theme/app_theme.dart';
 /// phase/marker plus any data the user logged. For today, it offers quick
 /// shortcuts to log more.
 void showDayDetailSheet(BuildContext context, DateTime day) {
+  final userModel = context.read<UserModel>();
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.surface,
-    builder: (_) => _DayDetailContent(day: day),
+    builder: (_) => ChangeNotifierProvider.value(
+      value: userModel,
+      child: _DayDetailContent(day: day),
+    )
   );
 }
 

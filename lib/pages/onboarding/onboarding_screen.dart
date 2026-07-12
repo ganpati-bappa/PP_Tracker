@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pp_tracker/state/onboarding_controller.dart';
@@ -102,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        context.read<OnboardingController>().completeOnboarding();
+                        unawaited(context.read<OnboardingController>().completeOnboarding());
                       }
                     },
                     style: FilledButton.styleFrom(

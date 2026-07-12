@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pp_tracker/components/app_nav_bar.dart';
@@ -28,7 +30,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // In a real app, check SharedPreferences if tour was already shown.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final onboarding = context.read<OnboardingController>();
       if (onboarding.shouldShowTour) {
@@ -99,7 +100,10 @@ class _HomePageState extends State<HomePage> {
                 description: 'Manage your data, goals, and app settings.',
               ),
             ],
-            onComplete: () => setState(() => _showTour = false),
+            onComplete: () => setState(() {
+              _showTour = false;
+              unawaited(context.read<OnboardingController>().setTourStatus(_showTour));
+            }),
           ),
       ],
     );
