@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:pp_tracker/components/app_card.dart';
 import 'package:pp_tracker/components/cycle_ring.dart';
 import 'package:pp_tracker/components/quick_log_sheets.dart';
+import 'package:pp_tracker/models/cycle_phase.dart';
 import 'package:pp_tracker/models/daily_log.dart';
 import 'package:pp_tracker/models/user_model.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
@@ -131,40 +132,76 @@ class _CycleHeroCard extends StatelessWidget {
     final phase = model.currentPhase;
     final cycle = model.cycle;
 
-    return AppCard(
+    // Solid warm-white card with a phase-tinted border and a soft phase glow —
+    // legible dark text, richly phase-specific, and clearly the focal point.
+    return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.alpha(phase.color, 0.16),
-          AppColors.surface,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.alpha(phase.color, 0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.alpha(AppColors.textPrimary, 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: AppColors.alpha(phase.color, 0.28),
+            blurRadius: 44,
+            spreadRadius: -8,
+            offset: const Offset(0, 22),
+          ),
         ],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Pill(label: phase.label, color: phase.color, icon: phase.icon),
+              _PhasePill(phase: phase),
               const Spacer(),
-              Text(phase.emoji, style: const TextStyle(fontSize: 22)),
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.alpha(phase.color, 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(phase.emoji, style: const TextStyle(fontSize: 20)),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          CycleRing(
-            cycle: cycle,
-            size: 230,
-            center: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Cycle day', style: AppText.caption),
-                const SizedBox(height: 2),
-                Text('${model.cycleDay}',
-                    style: AppText.display
-                        .copyWith(fontSize: 56, color: phase.color)),
-                const SizedBox(height: 2),
-                Text(phase.tagline, style: AppText.label),
-              ],
+          // Radial phase glow behind the ring adds warmth and focus.
+          Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.alpha(phase.color, 0.16),
+                  AppColors.alpha(phase.color, 0.0),
+                ],
+              ),
+            ),
+            child: CycleRing(
+              cycle: cycle,
+              size: 232,
+              center: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('CYCLE DAY',
+                      style: AppText.overline.copyWith(
+                          color: phase.deepColor, letterSpacing: 2)),
+                  const SizedBox(height: 4),
+                  Text('${model.cycleDay}',
+                      style: AppText.display.copyWith(
+                          fontSize: 60, height: 1, color: phase.deepColor)),
+                  const SizedBox(height: 4),
+                  Text(phase.tagline, style: AppText.bodyStrong),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -175,33 +212,62 @@ class _CycleHeroCard extends StatelessWidget {
                   value: '${model.daysUntilPeriod}',
                   unit: 'days',
                   label: 'Until period',
-                  color: AppColors.menstrual,
+                  color: AppColors.menstrualDeep,
                 ),
               ),
-              Container(
-                  width: 1,
-                  height: 36,
-                  color: AppColors.divider),
+              Container(width: 1, height: 36, color: AppColors.divider),
               Expanded(
                 child: _HeroStat(
                   value: DateFormat.MMMd().format(model.ovulationDate),
                   label: 'Ovulation',
-                  color: AppColors.ovulation,
+                  color: AppColors.ovulationDeep,
                 ),
               ),
-              Container(
-                  width: 1,
-                  height: 36,
-                  color: AppColors.divider),
+              Container(width: 1, height: 36, color: AppColors.divider),
               Expanded(
                 child: _HeroStat(
                   value: '${model.regularityScore}%',
                   label: 'Regularity',
-                  color: AppColors.follicular,
+                  color: AppColors.follicularDeep,
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A solid, prominent phase badge for the hero card.
+class _PhasePill extends StatelessWidget {
+  final CyclePhase phase;
+  const _PhasePill({required this.phase});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [phase.color, AppColors.darken(phase.color, 0.08)],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.alpha(phase.color, 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(phase.icon, size: 15, color: Colors.white),
+          const SizedBox(width: 6),
+          Text('${phase.label} phase',
+              style: AppText.label.copyWith(color: Colors.white)),
         ],
       ),
     );
@@ -233,7 +299,9 @@ class _HeroStat extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(label, style: AppText.caption, textAlign: TextAlign.center),
+        Text(label,
+            style: AppText.caption.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center),
       ],
     );
   }

@@ -1,8 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
 /// The standard surface used across the app: rounded, softly shadowed, with
 /// an optional tap ripple. Keeps elevation and radius consistent everywhere.
+///
+/// By default it carries a crisp hairline border and the prominent, blue-tinted
+/// [AppShadows.card] so it reads as a floating surface on the gradient
+/// background. Set [glass] for a translucent, frosted-glass treatment that lets
+/// the background wash blur through.
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -13,6 +20,9 @@ class AppCard extends StatelessWidget {
   final double radius;
   final List<BoxShadow>? shadows;
   final Border? border;
+
+  /// Frosted-glass surface: translucent fill + backdrop blur + light border.
+  final bool glass;
 
   const AppCard({
     super.key,
@@ -25,21 +35,52 @@ class AppCard extends StatelessWidget {
     this.radius = AppRadius.lg,
     this.shadows,
     this.border,
+    this.glass = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final content = AnimatedContainer(
+    final borderRadius = BorderRadius.circular(radius);
+    // A subtle border gives cards definition against the gradient. Glass cards
+    // use a lighter, brighter edge to read as a lit pane.
+    final resolvedBorder = border ??
+        Border.all(
+          color: glass ? AppColors.glassBorder : AppColors.hairline,
+          width: glass ? 1.2 : 0.8,
+        );
+
+    Widget inner = AnimatedContainer(
       duration: AppDuration.fast,
       padding: padding,
       decoration: BoxDecoration(
-        color: gradient == null ? (color ?? AppColors.surface) : null,
+        color: gradient != null
+            ? null
+            : (color ??
+                (glass ? AppColors.glassFill : AppColors.surface)),
         gradient: gradient,
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: shadows ?? AppShadows.card,
-        border: border,
+        borderRadius: borderRadius,
+        border: resolvedBorder,
       ),
       child: child,
+    );
+
+    if (glass) {
+      inner = ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: inner,
+        ),
+      );
+    }
+
+    // Shadows live on a wrapping box so they stay crisp outside any clip.
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: shadows ?? AppShadows.card,
+      ),
+      child: inner,
     );
 
     if (onTap == null) {
@@ -49,10 +90,10 @@ class AppCard extends StatelessWidget {
       padding: margin ?? EdgeInsets.zero,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: borderRadius,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: borderRadius,
           splashColor: AppColors.alpha(AppColors.primary, 0.06),
           child: content,
         ),

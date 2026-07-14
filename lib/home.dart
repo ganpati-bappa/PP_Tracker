@@ -49,8 +49,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Scaffold(
-          backgroundColor: AppColors.background,
+        AppBackground(
+          child: Scaffold(
+          backgroundColor: Colors.transparent,
           extendBody: true,
           body: AnimatedSwitcher(
             duration: AppDuration.normal,
@@ -75,6 +76,7 @@ class _HomePageState extends State<HomePage> {
             onTap: (i) => setState(() => _index = i),
             keys: [_todayKey, _calendarKey, _learnKey, _profileKey],
           ),
+        ),
         ),
         if (_showTour)
           GuidedTourOverlay(

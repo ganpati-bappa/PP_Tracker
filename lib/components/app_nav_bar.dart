@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
@@ -32,19 +34,29 @@ class AppNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(AppRadius.pill);
     return Container(
       margin: const EdgeInsets.fromLTRB(
           AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: borderRadius,
         boxShadow: AppShadows.lifted,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(_destinations.length, (i) {
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: AppColors.glassFill,
+              borderRadius: borderRadius,
+              border: Border.all(color: AppColors.glassBorder, width: 1.2),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(_destinations.length, (i) {
           final d = _destinations[i];
           final active = i == activeIndex;
           return Expanded(
@@ -92,8 +104,11 @@ class AppNavBar extends StatelessWidget {
               ),
             ),
           );
-        }),
-      ),
-    );
+                }),
+              ), // Row
+            ), // inner Container (glass fill)
+          ), // BackdropFilter
+        ), // ClipRRect
+      ); // Container (shadow holder) + return
   }
 }

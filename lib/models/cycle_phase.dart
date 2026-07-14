@@ -44,6 +44,15 @@ enum CyclePhase {
         CyclePhase.luteal => AppColors.luteal,
       };
 
+  /// A darker, saturated variant of [color] for legible text/icons on light
+  /// (tinted) surfaces such as the Home hero card.
+  Color get deepColor => switch (this) {
+        CyclePhase.menstrual => AppColors.menstrualDeep,
+        CyclePhase.follicular => AppColors.follicularDeep,
+        CyclePhase.ovulation => AppColors.ovulationDeep,
+        CyclePhase.luteal => AppColors.lutealDeep,
+      };
+
   /// A short, supportive description shown on detail surfaces.
   String get description => switch (this) {
         CyclePhase.menstrual =>
