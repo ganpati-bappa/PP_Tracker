@@ -1,0 +1,116 @@
+rules_version = '2';
+
+// Security rules for the Petal blog data layer.
+//
+// Model summary (see lib/repositories/firestore/firestore_paths.dart):
+//   users/{uid}          profile; private activity subcollections
+//   blogs/{id}           articles; per-blog likes subcollection
+//   comments/{id}        top-level comments; per-comment likes subcollection
+//   categories/{id}      read-only taxonomy (seeded/admin)
+//   blogReports/{id}     moderation queue (write-only for reporters)
+//
+// Design note: like/comment counters live on the parent document and are
+// incremented by many users, so the rules below allow *any* signed-in user to
+// update ONLY the counter fields, while restricting content edits to owners.
+// For hardened integrity, move counter mutations into Cloud Functions and make
+// these fields client-immutable.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Keys that changed between the existing doc and the incoming write.
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function onlyAffects(fields) {
+      return changedKeys().hasOnly(fields);
+    }
+
+    // ---- Users -------------------------------------------------------------
+    match /users/{uid} {
+      // Profiles are public (author bylines, expert badges).
+      allow read: if signedIn();
+      // A user may create/update only their own profile. `isExpert` is
+      // moderator-controlled: it must stay false unless already true.
+      allow create: if isSelf(uid)
+        && request.resource.data.get('isExpert', false) == false;
+      allow update: if isSelf(uid)
+        && request.resource.data.isExpert == resource.data.isExpert;
+      allow delete: if false; // never hard-delete; deactivate instead
+
+      // Private per-user activity: only the owner reads or writes.
+      match /{sub}/{docId} {
+        allow read, write: if isSelf(uid);
+      }
+    }
+
+    // ---- Blogs -------------------------------------------------------------
+    match /blogs/{blogId} {
+      function isAuthor() {
+        return signedIn() && resource.data.authorId == request.auth.uid;
+      }
+      // Only these fields may be touched by a non-author (like/comment/view
+      // counters bumped as a side effect of interacting).
+      function onlyCounters() {
+        return onlyAffects([
+          'likeCount', 'commentCount', 'viewCount', 'engagementScore', 'updatedAt'
+        ]);
+      }
+
+      allow read: if resource.data.visibility == 'public'
+        || (signedIn() && resource.data.authorId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthor() || (signedIn() && onlyCounters());
+      allow delete: if false; // soft-delete via isDeleted flag
+
+      match /likes/{likeUid} {
+        allow read: if signedIn();
+        allow write: if isSelf(likeUid);
+      }
+    }
+
+    // ---- Comments (top-level) ---------------------------------------------
+    match /comments/{commentId} {
+      function isCommentAuthor() {
+        return signedIn() && resource.data.userId == request.auth.uid;
+      }
+      function onlyCommentCounters() {
+        return onlyAffects(['likeCount', 'replyCount', 'updatedAt']);
+      }
+
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+      // Author edits/soft-deletes their own; anyone may bump like/reply counts.
+      allow update: if isCommentAuthor() || (signedIn() && onlyCommentCounters());
+      allow delete: if false; // soft-delete (status = deleted)
+
+      match /likes/{likeUid} {
+        allow read: if signedIn();
+        allow write: if isSelf(likeUid);
+      }
+    }
+
+    // ---- Categories (read-only taxonomy) ----------------------------------
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false; // seeded via admin/console
+    }
+
+    // ---- Moderation reports (write-only for reporters) --------------------
+    match /blogReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reporterId == request.auth.uid;
+      allow read, update, delete: if false; // moderators only (server-side)
+    }
+  }
+}

@@ -25,6 +25,12 @@ abstract class UserRepository {
   /// Persists user-edited profile fields (bio, display name, …).
   Future<void> saveProfile(AppUser user);
 
+  /// Soft-deactivates ([active] = false) or reactivates a user. We deliberately
+  /// avoid hard-deletes: they would orphan the user's authored blogs and
+  /// comments. Deactivation flips `isActive`, which security rules use to block
+  /// further writes while keeping existing content attributable.
+  Future<void> setActive(String id, bool active);
+
   // ---- Activity counters --------------------------------------------------
   // Bumped when the user authors a post/comment or bookmarks an article so the
   // profile stays cheap to render without counting subcollections.

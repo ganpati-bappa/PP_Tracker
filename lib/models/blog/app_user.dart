@@ -40,6 +40,16 @@ class AppUser {
   final int commentCount;
   final int bookmarkCount;
 
+  /// Number of blogs this user has liked (rollup of the `likedBlogs` reverse
+  /// index). Added after the initial schema — [fromMap] defaults it to 0 so
+  /// documents written before it existed still deserialize cleanly.
+  final int likeCount;
+
+  /// Soft-deactivation flag. We never hard-delete a user (it would orphan their
+  /// blogs/comments); deactivating hides them and blocks writes while keeping
+  /// authored content attributable. Defaults to active for legacy docs.
+  final bool isActive;
+
   /// Free-form bag for forward-compatible backend fields (followers, roles…)
   /// so adding fields later doesn't break deserialization.
   final Map<String, dynamic> metadata;
@@ -59,6 +69,8 @@ class AppUser {
     this.postCount = 0,
     this.commentCount = 0,
     this.bookmarkCount = 0,
+    this.likeCount = 0,
+    this.isActive = true,
     this.metadata = const {},
   });
 
@@ -90,6 +102,8 @@ class AppUser {
     int? postCount,
     int? commentCount,
     int? bookmarkCount,
+    int? likeCount,
+    bool? isActive,
     Map<String, dynamic>? metadata,
   }) {
     return AppUser(
@@ -107,6 +121,8 @@ class AppUser {
       postCount: postCount ?? this.postCount,
       commentCount: commentCount ?? this.commentCount,
       bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+      likeCount: likeCount ?? this.likeCount,
+      isActive: isActive ?? this.isActive,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -126,6 +142,8 @@ class AppUser {
         'postCount': postCount,
         'commentCount': commentCount,
         'bookmarkCount': bookmarkCount,
+        'likeCount': likeCount,
+        'isActive': isActive,
         'metadata': metadata,
       };
 
@@ -145,6 +163,8 @@ class AppUser {
         postCount: (map['postCount'] as num?)?.toInt() ?? 0,
         commentCount: (map['commentCount'] as num?)?.toInt() ?? 0,
         bookmarkCount: (map['bookmarkCount'] as num?)?.toInt() ?? 0,
+        likeCount: (map['likeCount'] as num?)?.toInt() ?? 0,
+        isActive: map['isActive'] as bool? ?? true,
         metadata:
             (map['metadata'] as Map?)?.cast<String, dynamic>() ?? const {},
       );

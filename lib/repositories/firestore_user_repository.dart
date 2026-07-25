@@ -67,6 +67,8 @@ class FirestoreUserRepository implements UserRepository {
         'postCount': 0,
         'commentCount': 0,
         'bookmarkCount': 0,
+        'likeCount': 0,
+        'isActive': true,
         'metadata': <String, dynamic>{},
       });
     }
@@ -87,6 +89,16 @@ class FirestoreUserRepository implements UserRepository {
       'metadata': user.metadata,
     }, SetOptions(merge: true));
   }
+
+  @override
+  Future<void> setActive(String id, bool active) => _users.doc(id).set(
+        {
+          'isActive': active,
+          'deactivatedAt':
+              active ? FieldValue.delete() : FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
   @override
   Future<void> incrementPostCount(String id, [int by = 1]) =>

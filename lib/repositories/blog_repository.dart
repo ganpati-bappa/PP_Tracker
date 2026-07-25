@@ -112,6 +112,10 @@ abstract class BlogRepository {
   // ---- Authoring (drafts / publishing) ----------------------------------
   Future<Blog> upsertBlog(Blog blog);
 
+  /// Soft-deletes a blog: it is retired from every public feed but the document
+  /// (and its comments/likes) is preserved for audit and possible restore.
+  Future<void> deleteBlog(String blogId);
+
   // ---- Moderation -------------------------------------------------------
   Future<void> reportBlog(BlogReport report);
 

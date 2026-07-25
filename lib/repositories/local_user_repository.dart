@@ -68,6 +68,12 @@ class LocalUserRepository implements UserRepository {
   }
 
   @override
+  Future<void> setActive(String id, bool active) async {
+    final u = _store[id];
+    if (u != null) _save(u.copyWith(isActive: active));
+  }
+
+  @override
   Future<void> incrementPostCount(String id, [int by = 1]) async {
     final u = _store[id];
     if (u != null) _save(u.copyWith(postCount: u.postCount + by));
