@@ -10,6 +10,7 @@ import 'package:pp_tracker/models/user_model.dart';
 import 'package:pp_tracker/repositories/blog_repository.dart';
 import 'package:pp_tracker/repositories/firestore_blog_repository.dart';
 import 'package:pp_tracker/repositories/firestore_seeder.dart';
+import 'package:pp_tracker/repositories/cycle_profile_store.dart';
 import 'package:pp_tracker/repositories/firestore_user_repository.dart';
 import 'package:pp_tracker/repositories/local_user_repository.dart';
 import 'package:pp_tracker/repositories/mock_blog_repository.dart';
@@ -110,9 +111,26 @@ class _AuthenticatedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Guests live entirely in SharedPreferences; signed-in users also mirror
+    // their (private) cycle profile to Firestore for cross-device sync.
+    final useRemote = !user.isAnonymous && AppConfig.usesFirestore;
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserModel()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final model = UserModel(
+              uid: user.id,
+              profileStore: CycleProfileStore(useRemote: useRemote),
+            );
+            // Personalise the greeting from the signed-in identity.
+            final name = user.displayName.trim();
+            if (name.isNotEmpty && name.toLowerCase() != 'guest') {
+              model.preferences.name = name;
+            }
+            return model;
+          },
+        ),
         ChangeNotifierProvider(create: (_) {
           final controller = OnboardingController();
           controller.initialize();
