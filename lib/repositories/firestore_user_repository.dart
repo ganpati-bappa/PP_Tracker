@@ -64,10 +64,6 @@ class FirestoreUserRepository implements UserRepository {
         'credentials': null,
         'joinedAt': now,
         'lastActiveAt': now,
-        'postCount': 0,
-        'commentCount': 0,
-        'bookmarkCount': 0,
-        'likeCount': 0,
         'isActive': true,
         'metadata': <String, dynamic>{},
       });
@@ -97,23 +93,6 @@ class FirestoreUserRepository implements UserRepository {
           'deactivatedAt':
               active ? FieldValue.delete() : FieldValue.serverTimestamp(),
         },
-        SetOptions(merge: true),
-      );
-
-  @override
-  Future<void> incrementPostCount(String id, [int by = 1]) =>
-      _bump(id, 'postCount', by);
-
-  @override
-  Future<void> incrementCommentCount(String id, [int by = 1]) =>
-      _bump(id, 'commentCount', by);
-
-  @override
-  Future<void> incrementBookmarkCount(String id, [int by = 1]) =>
-      _bump(id, 'bookmarkCount', by);
-
-  Future<void> _bump(String id, String field, int by) => _users.doc(id).set(
-        {field: FieldValue.increment(by)},
         SetOptions(merge: true),
       );
 

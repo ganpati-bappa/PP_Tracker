@@ -155,16 +155,42 @@ class _AuthenticatedApp extends StatelessWidget {
   }
 }
 
+/// Branded launch/loading screen shown while auth and on-device state resolve.
+///
+/// Deliberately identical to the native launch screen (rose background + white
+/// spa/lotus, see `flutter_native_splash` in pubspec) so the hand-off from the
+/// OS splash into Flutter is seamless — no flash of a different design.
 class _Splash extends StatelessWidget {
   const _Splash();
+
+  // The exact light background used by the native splash
+  // (windowSplashScreenBackground / flutter_native_splash `color`).
+  static const Color _splashBg = Color(0xFFFBF3F1);
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _splashBg,
       body: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(AppColors.primary),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The rose badge + white lotus, matching the native launch screen.
+            Image(
+              image: AssetImage('assets/icon/splash_lotus_badge.png'),
+              width: 168,
+              height: 168,
+            ),
+            SizedBox(height: 28),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                valueColor: AlwaysStoppedAnimation(AppColors.primary),
+              ),
+            ),
+          ],
         ),
       ),
     );

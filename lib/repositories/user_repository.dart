@@ -30,11 +30,4 @@ abstract class UserRepository {
   /// comments. Deactivation flips `isActive`, which security rules use to block
   /// further writes while keeping existing content attributable.
   Future<void> setActive(String id, bool active);
-
-  // ---- Activity counters --------------------------------------------------
-  // Bumped when the user authors a post/comment or bookmarks an article so the
-  // profile stays cheap to render without counting subcollections.
-  Future<void> incrementPostCount(String id, [int by = 1]);
-  Future<void> incrementCommentCount(String id, [int by = 1]);
-  Future<void> incrementBookmarkCount(String id, [int by = 1]);
 }

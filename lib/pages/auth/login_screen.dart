@@ -14,47 +14,47 @@ class LoginScreen extends StatelessWidget {
 
     return AppBackground(
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            children: [
-              const Spacer(flex: 3),
-              const _Brand(),
-              const Spacer(flex: 4),
-              if (auth.errorMessage != null) ...[
-                _ErrorBanner(message: auth.errorMessage!),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              _GoogleButton(
-                busy: auth.isBusy,
-                onPressed: auth.isBusy
-                    ? null
-                    : () => context.read<AuthController>().signInWithGoogle(),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: auth.isBusy
-                    ? null
-                    : () => context.read<AuthController>().continueAsGuest(),
-                child: Text(
-                  'Continue without an account',
-                  style: AppText.label.copyWith(color: AppColors.textSecondary),
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            child: Column(
+              children: [
+                const Spacer(flex: 3),
+                const _Brand(),
+                const Spacer(flex: 4),
+                if (auth.errorMessage != null) ...[
+                  _ErrorBanner(message: auth.errorMessage!),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                _GoogleButton(
+                  busy: auth.isBusy,
+                  onPressed: auth.isBusy
+                      ? null
+                      : () => context.read<AuthController>().signInWithGoogle(),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'By continuing you agree to our Terms & Privacy Policy.',
-                textAlign: TextAlign.center,
-                style: AppText.caption,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
+                const SizedBox(height: AppSpacing.sm),
+                TextButton(
+                  onPressed: auth.isBusy
+                      ? null
+                      : () => context.read<AuthController>().continueAsGuest(),
+                  child: Text(
+                    'Continue without an account',
+                    style: AppText.label.copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'By continuing you agree to our Terms & Privacy Policy.',
+                  textAlign: TextAlign.center,
+                  style: AppText.caption,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -123,8 +123,7 @@ class _GoogleButton extends StatelessWidget {
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.4,
-                        valueColor:
-                            AlwaysStoppedAnimation(AppColors.primary),
+                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
                       ),
                     )
                   : Row(
@@ -132,8 +131,7 @@ class _GoogleButton extends StatelessWidget {
                       children: [
                         const _GoogleG(),
                         const SizedBox(width: AppSpacing.sm),
-                        Text('Continue with Google',
-                            style: AppText.bodyStrong),
+                        Text('Continue with Google', style: AppText.bodyStrong),
                       ],
                     ),
             ),
@@ -150,11 +148,7 @@ class _GoogleG extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: CustomPaint(painter: _GoogleGPainter()),
-    );
+    return SizedBox(width: 22, height: 22, child: CustomPaint(painter: _GoogleGPainter()));
   }
 }
 
@@ -188,10 +182,7 @@ class _GoogleGPainter extends CustomPainter {
 
     // The horizontal bar of the G.
     final bar = Paint()..color = blue;
-    canvas.drawRect(
-      Rect.fromLTWH(c.dx, c.dy - stroke / 2, r - stroke / 2, stroke),
-      bar,
-    );
+    canvas.drawRect(Rect.fromLTWH(c.dx, c.dy - stroke / 2, r - stroke / 2, stroke), bar);
   }
 
   double _rad(double deg) => deg * 3.1415926535 / 180.0;
@@ -216,12 +207,10 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded,
-              color: AppColors.danger, size: 20),
+          const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 20),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(message,
-                style: AppText.label.copyWith(color: AppColors.danger)),
+            child: Text(message, style: AppText.label.copyWith(color: AppColors.danger)),
           ),
         ],
       ),

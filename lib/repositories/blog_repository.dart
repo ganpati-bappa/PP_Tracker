@@ -98,11 +98,23 @@ abstract class BlogRepository {
   Future<List<Blog>> fetchRecommended({String? forUserId, int limit = 6});
   Future<List<Blog>> fetchRelated(Blog blog, {int limit = 3});
 
-  // ---- Per-user state ---------------------------------------------------
+  // ---- Per-user relationships -------------------------------------------
+  // These are the user's activity, resolved by query/subcollection rather than
+  // being denormalized onto the user document:
+  //   • bookmarked -> users/{uid}/bookmarks
+  //   • liked      -> users/{uid}/likedBlogs
+  //   • authored   -> blogs where authorId == uid
   Future<void> setBookmark(String blogId, String userId, bool bookmarked);
   Future<List<Blog>> fetchBookmarks(String userId);
 
   Future<void> toggleLike(String blogId, String userId);
+
+  /// Blogs the user has liked (from the `likedBlogs` reverse-index subcollection).
+  Future<List<Blog>> fetchLikedBlogs(String userId, {int limit = 50});
+
+  /// Blogs authored by the user (`blogs where authorId == userId`) — no
+  /// `authoredBlogs` array is kept on the user document.
+  Future<List<Blog>> fetchAuthoredBlogs(String userId, {int limit = 50});
 
   Future<void> recordView(String blogId, String userId);
   Future<void> saveReadingProgress(String blogId, String userId, double progress);

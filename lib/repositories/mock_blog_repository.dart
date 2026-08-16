@@ -181,6 +181,24 @@ class MockBlogRepository implements BlogRepository {
   }
 
   @override
+  Future<List<Blog>> fetchLikedBlogs(String userId, {int limit = 50}) {
+    final ids = _likes[userId] ?? {};
+    final list = _blogs.where((b) => ids.contains(b.id)).take(limit).toList();
+    return _io(list.map((b) => _decorate(b, userId)).toList());
+  }
+
+  @override
+  Future<List<Blog>> fetchAuthoredBlogs(String userId, {int limit = 50}) {
+    final list = _blogs
+        .where((b) =>
+            b.authorId == userId && b.visibility != BlogVisibility.archived)
+        .sorted((a, b) => b.publishedAt.compareTo(a.publishedAt))
+        .take(limit)
+        .toList();
+    return _io(list.map((b) => _decorate(b, userId)).toList());
+  }
+
+  @override
   Future<void> toggleLike(String blogId, String userId) {
     final set = _likes.putIfAbsent(userId, () => {});
     final idx = _blogs.indexWhere((b) => b.id == blogId);
