@@ -1,10 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pp_tracker/config/app_config.dart';
 import 'package:pp_tracker/home.dart';
 import 'package:pp_tracker/models/blog/app_user.dart';
 import 'package:pp_tracker/models/user_model.dart';
 import 'package:pp_tracker/repositories/blog_repository.dart';
+import 'package:pp_tracker/repositories/firestore_blog_repository.dart';
+import 'package:pp_tracker/repositories/firestore_seeder.dart';
+import 'package:pp_tracker/repositories/cycle_profile_store.dart';
 import 'package:pp_tracker/repositories/firestore_user_repository.dart';
 import 'package:pp_tracker/repositories/local_user_repository.dart';
 import 'package:pp_tracker/repositories/mock_blog_repository.dart';
@@ -19,6 +25,25 @@ import 'package:pp_tracker/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  if (AppConfig.usesFirestore) {
+    // Enable Firestore's on-device cache so reads work offline and writes queue
+    // and replay automatically when connectivity returns.
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+    // Debug-only: give a fresh project browsable content. No-ops once seeded,
+    // and never runs in release builds.
+    if (kDebugMode) {
+      try {
+        await FirestoreSeeder().seedIfEmpty();
+      } catch (e) {
+        debugPrint('Blog seed skipped: $e');
+      }
+    }
+  }
+
   runApp(const PetalApp());
 }
 
@@ -27,9 +52,11 @@ class PetalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Single instances shared across the app. Swap MockBlogRepository for a
-    // Firestore implementation here and nothing above this line changes.
-    final BlogRepository blogRepository = MockBlogRepository();
+    // The single seam that selects the blog backend. Everything above the
+    // BlogRepository interface is identical for mock and Firestore.
+    final BlogRepository blogRepository = AppConfig.usesFirestore
+        ? FirestoreBlogRepository()
+        : MockBlogRepository();
 
     return ChangeNotifierProvider(
       create: (_) => AuthController(
@@ -84,9 +111,26 @@ class _AuthenticatedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Guests live entirely in SharedPreferences; signed-in users also mirror
+    // their (private) cycle profile to Firestore for cross-device sync.
+    final useRemote = !user.isAnonymous && AppConfig.usesFirestore;
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserModel()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final model = UserModel(
+              uid: user.id,
+              profileStore: CycleProfileStore(useRemote: useRemote),
+            );
+            // Personalise the greeting from the signed-in identity.
+            final name = user.displayName.trim();
+            if (name.isNotEmpty && name.toLowerCase() != 'guest') {
+              model.preferences.name = name;
+            }
+            return model;
+          },
+        ),
         ChangeNotifierProvider(create: (_) {
           final controller = OnboardingController();
           controller.initialize();
@@ -111,16 +155,42 @@ class _AuthenticatedApp extends StatelessWidget {
   }
 }
 
+/// Branded launch/loading screen shown while auth and on-device state resolve.
+///
+/// Deliberately identical to the native launch screen (rose background + white
+/// spa/lotus, see `flutter_native_splash` in pubspec) so the hand-off from the
+/// OS splash into Flutter is seamless — no flash of a different design.
 class _Splash extends StatelessWidget {
   const _Splash();
+
+  // The exact light background used by the native splash
+  // (windowSplashScreenBackground / flutter_native_splash `color`).
+  static const Color _splashBg = Color(0xFFFBF3F1);
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _splashBg,
       body: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(AppColors.primary),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The rose badge + white lotus, matching the native launch screen.
+            Image(
+              image: AssetImage('assets/icon/splash_lotus_badge.png'),
+              width: 168,
+              height: 168,
+            ),
+            SizedBox(height: 28),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                valueColor: AlwaysStoppedAnimation(AppColors.primary),
+              ),
+            ),
+          ],
         ),
       ),
     );

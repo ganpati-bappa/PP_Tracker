@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pp_tracker/pages/onboarding/cycle_setup_screen.dart';
 import 'package:pp_tracker/state/onboarding_controller.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
@@ -15,16 +15,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  /// Once the intro slides are done we swap the whole screen over to the cycle
+  /// setup form (the final onboarding step, shown before the guided tour).
+  bool _showSetup = false;
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
 
+  /// Applies-and-persists happens inside [CycleSetupView]; here we just flip the
+  /// onboarding-complete flag so the app routes on to the home + guided tour.
+  Future<void> _finishOnboarding() async {
+    await context.read<OnboardingController>().completeOnboarding();
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<OnboardingController>();
     final steps = controller.steps;
+
+    if (_showSetup) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: AppBackground(
+          child: CycleSetupView(onComplete: _finishOnboarding),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -103,7 +122,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        unawaited(context.read<OnboardingController>().completeOnboarding());
+                        // Last intro slide -> collect the cycle metrics.
+                        setState(() => _showSetup = true);
                       }
                     },
                     style: FilledButton.styleFrom(
@@ -121,7 +141,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 if (_currentPage < steps.length - 1)
                   TextButton(
                     onPressed: () {
-                      context.read<OnboardingController>().completeOnboarding(skipTour: true);
+                      // Skip the intro, but still collect the cycle metrics —
+                      // they're pre-filled with defaults, so it's a one-tap
+                      // finish for anyone in a hurry.
+                      setState(() => _showSetup = true);
                     },
                     child: Text(
                       'Skip',

@@ -59,6 +59,35 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+
+# Launcher icon generation (run: `dart run flutter_launcher_icons`).
+# Source art is the in-app Petal brand mark (rose→plum bloom); see
+# assets/icon/. The transparent foreground keeps the flower inside the
+# Android adaptive-icon safe zone, with the brand rose as the background.
+flutter_launcher_icons:
+  image_path: "assets/icon/petal_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_background: "#B4577A"
+  adaptive_icon_foreground: "assets/icon/petal_icon_foreground.png"
+
+# Native startup splash (run: `dart run flutter_native_splash:create`).
+# Shows the white Petal spa/lotus on the brand rose so the OS launch screen
+# matches the in-app brand mark instead of defaulting to the launcher icon.
+flutter_native_splash:
+  color: "#FBF3F1"
+  image: assets/icon/splash_lotus_badge.png
+  android: true
+  ios: true
+  web: false
+  android_12:
+    color: "#FBF3F1"
+    image: assets/icon/splash_lotus_fg.png
+    icon_background_color: "#B4577A"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -72,6 +101,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/phases/
+    - assets/icon/splash_lotus_badge.png
 
   # To add assets to your application, add an assets section, like this:
 

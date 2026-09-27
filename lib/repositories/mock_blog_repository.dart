@@ -25,6 +25,25 @@ class MockBlogRepository implements BlogRepository {
   static const _latency = Duration(milliseconds: 350);
   Future<T> _io<T>(T value) => Future.delayed(_latency, () => value);
 
+  /// The canonical demo dataset (categories, blogs, seed users), built by
+  /// running the same in-memory seed used by the mock. Exposed so a Firestore
+  /// seeder can upload identical content without duplicating it here.
+  static ({
+    List<BlogCategory> categories,
+    List<Blog> blogs,
+    List<AppUser> users,
+  }) demoDataset() {
+    final repo = MockBlogRepository();
+    return (
+      categories: List.unmodifiable(repo._categories),
+      blogs: List.unmodifiable(repo._blogs),
+      users: List.unmodifiable(repo._users),
+    );
+  }
+
+  /// Live view of the seeded blogs, for the in-memory search repository.
+  List<Blog> get blogsView => List.unmodifiable(_blogs);
+
   Blog _decorate(Blog b, String? userId) {
     if (userId == null) return b;
     return b.copyWith(
@@ -162,6 +181,24 @@ class MockBlogRepository implements BlogRepository {
   }
 
   @override
+  Future<List<Blog>> fetchLikedBlogs(String userId, {int limit = 50}) {
+    final ids = _likes[userId] ?? {};
+    final list = _blogs.where((b) => ids.contains(b.id)).take(limit).toList();
+    return _io(list.map((b) => _decorate(b, userId)).toList());
+  }
+
+  @override
+  Future<List<Blog>> fetchAuthoredBlogs(String userId, {int limit = 50}) {
+    final list = _blogs
+        .where((b) =>
+            b.authorId == userId && b.visibility != BlogVisibility.archived)
+        .sorted((a, b) => b.publishedAt.compareTo(a.publishedAt))
+        .take(limit)
+        .toList();
+    return _io(list.map((b) => _decorate(b, userId)).toList());
+  }
+
+  @override
   Future<void> toggleLike(String blogId, String userId) {
     final set = _likes.putIfAbsent(userId, () => {});
     final idx = _blogs.indexWhere((b) => b.id == blogId);
@@ -235,6 +272,16 @@ class MockBlogRepository implements BlogRepository {
       _blogs[idx] = blog;
     }
     return _io(blog);
+  }
+
+  @override
+  Future<void> deleteBlog(String blogId) {
+    final idx = _blogs.indexWhere((b) => b.id == blogId);
+    if (idx != -1) {
+      // Soft-delete: retire from public feeds but keep the record.
+      _blogs[idx] = _blogs[idx].copyWith(visibility: BlogVisibility.archived);
+    }
+    return _io(null);
   }
 
   @override

@@ -142,34 +142,6 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  // ---- Activity hooks (keep the users doc counters in sync) ---------------
-  Future<void> recordPostCreated() => _bump(users.incrementPostCount,
-      (u) => u.copyWith(postCount: u.postCount + 1));
-
-  Future<void> recordCommentCreated() => _bump(users.incrementCommentCount,
-      (u) => u.copyWith(commentCount: u.commentCount + 1));
-
-  Future<void> recordBookmarkChanged(bool added) => _bump(
-        (id, [by = 1]) => users.incrementBookmarkCount(id, added ? 1 : -1),
-        (u) => u.copyWith(
-            bookmarkCount: (u.bookmarkCount + (added ? 1 : -1)).clamp(0, 1 << 31)),
-      );
-
-  Future<void> _bump(
-    Future<void> Function(String id, [int by]) remote,
-    AppUser Function(AppUser) optimistic,
-  ) async {
-    final user = currentUser;
-    if (user == null) return;
-    currentUser = optimistic(user);
-    notifyListeners();
-    try {
-      await remote(user.id);
-    } catch (_) {
-      // Non-fatal; the counter is a convenience rollup.
-    }
-  }
-
   void _setBusy(bool value) {
     isBusy = value;
     if (value) errorMessage = null;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pp_tracker/components/corner_flower.dart';
 
 /// Centralized design system for the app.
 ///
@@ -350,16 +351,36 @@ class AppTheme {
 ///
 /// Use it as the outermost widget of a screen/shell (with a transparent
 /// Scaffold) so the warm wash shows through the content and floating surfaces.
+///
+/// When [showFlower] is true (the default) a subtle [CornerFlower] watermark
+/// bleeds in from the top-right corner behind the content.
 class AppBackground extends StatelessWidget {
   final Widget child;
   final Gradient? gradient;
-  const AppBackground({super.key, required this.child, this.gradient});
+  final bool showFlower;
+  const AppBackground({
+    super.key,
+    required this.child,
+    this.gradient,
+    this.showFlower = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(gradient: gradient ?? AppGradients.background),
-      child: child,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (showFlower)
+            const Positioned(
+              top: -40,
+              right: -40,
+              child: CornerFlower(),
+            ),
+          child,
+        ],
+      ),
     );
   }
 }

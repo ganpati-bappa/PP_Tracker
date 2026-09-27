@@ -133,6 +133,54 @@ class DailyLog {
   }
 
   static const Object _sentinel = Object();
+
+  // ---- Serialization ------------------------------------------------------
+  // Enums are stored by their `name` (stable string) so reordering the enum
+  // never corrupts stored data, and unknown values degrade gracefully.
+
+  Map<String, dynamic> toMap() => {
+        'date': DateTime(date.year, date.month, date.day).toIso8601String(),
+        'symptoms': symptoms.map((s) => s.name).toList(),
+        'mood': mood?.name,
+        'flow': flow.name,
+        'energy': energy,
+        'waterMl': waterMl,
+        'sleepHours': sleepHours,
+        'weightKg': weightKg,
+        'temperatureC': temperatureC,
+        'medications': medications,
+        'notes': notes,
+        'intimacy': intimacy,
+      };
+
+  factory DailyLog.fromMap(Map<String, dynamic> map) => DailyLog(
+        date: DateTime.tryParse(map['date'] as String? ?? '') ?? DateTime.now(),
+        symptoms: ((map['symptoms'] as List?) ?? const [])
+            .map((s) => _byName(Symptom.values, s))
+            .whereType<Symptom>()
+            .toSet(),
+        mood: _byName(Mood.values, map['mood']),
+        flow: _byName(FlowIntensity.values, map['flow']) ?? FlowIntensity.none,
+        energy: (map['energy'] as num?)?.toInt(),
+        waterMl: (map['waterMl'] as num?)?.toDouble() ?? 0,
+        sleepHours: (map['sleepHours'] as num?)?.toDouble(),
+        weightKg: (map['weightKg'] as num?)?.toDouble(),
+        temperatureC: (map['temperatureC'] as num?)?.toDouble(),
+        medications:
+            ((map['medications'] as List?) ?? const []).cast<String>(),
+        notes: map['notes'] as String? ?? '',
+        intimacy: map['intimacy'] as bool? ?? false,
+      );
+
+  /// Looks up an enum value by its `name`, returning null for null/unknown
+  /// input so a stale or malformed record never throws.
+  static T? _byName<T extends Enum>(List<T> values, dynamic name) {
+    if (name is! String) return null;
+    for (final v in values) {
+      if (v.name == name) return v;
+    }
+    return null;
+  }
 }
 
 extension MoodColor on Mood {
