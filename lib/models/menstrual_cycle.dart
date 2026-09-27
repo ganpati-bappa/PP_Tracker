@@ -42,16 +42,51 @@ class CycleRecord {
     required this.periodLength,
   });
 
-  DateTime get endDate => _atMidnight(startDate).add(Duration(days: cycleLength - 1));
-  DateTime get nextStart => _atMidnight(startDate).add(Duration(days: cycleLength));
+  DateTime get endDate => _addDays(startDate, cycleLength - 1);
+  DateTime get nextStart => _addDays(startDate, cycleLength);
 
   bool contains(DateTime day) {
     final d = _atMidnight(day);
     return !d.isBefore(_atMidnight(startDate)) && !d.isAfter(endDate);
   }
+
+  Map<String, dynamic> toMap() => {
+        'startDate': _atMidnight(startDate).toIso8601String(),
+        'cycleLength': cycleLength,
+        'periodLength': periodLength,
+      };
+
+  factory CycleRecord.fromMap(Map<String, dynamic> map) => CycleRecord(
+        startDate: DateTime.tryParse(map['startDate'] as String? ?? '') ??
+            DateTime.now(),
+        cycleLength: (map['cycleLength'] as num?)?.toInt() ??
+            MenstrualCycle.defaultCycleLength,
+        periodLength: (map['periodLength'] as num?)?.toInt() ??
+            MenstrualCycle.defaultPeriodLength,
+      );
 }
 
 DateTime _atMidnight(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// Adds [days] calendar days to [d] and returns local midnight of the result.
+///
+/// Uses the `DateTime(y, m, d + n)` constructor (not `add(Duration(days: n))`)
+/// so the arithmetic is immune to daylight-saving transitions: a `Duration`
+/// is a fixed span of hours and would land on the wrong calendar date around
+/// the 23-/25-hour DST days.
+DateTime _addDays(DateTime d, int days) =>
+    DateTime(d.year, d.month, d.day + days);
+
+/// Whole calendar days from [a] to [b] (positive if [b] is after [a]).
+///
+/// Computed in UTC — which has no DST — so day counting is exact. The local
+/// `DateTime(...).difference(...).inDays` used previously could be off by one
+/// across a spring-forward (23-hour) day.
+int _daysBetween(DateTime a, DateTime b) {
+  final ad = DateTime.utc(a.year, a.month, a.day);
+  final bd = DateTime.utc(b.year, b.month, b.day);
+  return bd.difference(ad).inDays;
+}
 
 /// The cycle engine.
 ///
@@ -82,19 +117,19 @@ class MenstrualCycle {
 
   int get ovulationDayOfCycle => cycleLength - lutealPhaseLength; // 1-based
   DateTime get currentCycleStart => _cycleStartFor(DateTime.now());
-  DateTime get nextPeriodDate => currentCycleStart.add(Duration(days: cycleLength));
+  DateTime get nextPeriodDate => _addDays(currentCycleStart, cycleLength);
   DateTime get ovulationDate =>
-      currentCycleStart.add(Duration(days: ovulationDayOfCycle - 1));
+      _addDays(currentCycleStart, ovulationDayOfCycle - 1);
 
   DateTime get fertileWindowStart =>
-      ovulationDate.subtract(const Duration(days: fertileWindowBefore));
-  DateTime get fertileWindowEnd => ovulationDate.add(const Duration(days: 1));
+      _addDays(ovulationDate, -fertileWindowBefore);
+  DateTime get fertileWindowEnd => _addDays(ovulationDate, 1);
 
   int get currentCycleDay => cycleDayFor(DateTime.now());
   CyclePhase get currentPhase => phaseFor(DateTime.now());
 
   int get daysUntilNextPeriod =>
-      nextPeriodDate.difference(_atMidnight(DateTime.now())).inDays;
+      _daysBetween(DateTime.now(), nextPeriodDate);
 
   // ---- Per-day computations ----------------------------------------------
 
@@ -102,14 +137,14 @@ class MenstrualCycle {
   /// forwards and backwards from the anchor).
   DateTime _cycleStartFor(DateTime date) {
     final d = _atMidnight(date);
-    final diff = d.difference(cycleStartDate).inDays;
+    final diff = _daysBetween(cycleStartDate, d);
     final offset = (diff / cycleLength).floor();
-    return cycleStartDate.add(Duration(days: offset * cycleLength));
+    return _addDays(cycleStartDate, offset * cycleLength);
   }
 
   int cycleDayFor(DateTime date) {
     final start = _cycleStartFor(date);
-    return _atMidnight(date).difference(start).inDays + 1;
+    return _daysBetween(start, date) + 1;
   }
 
   CyclePhase phaseFor(DateTime date) {
@@ -207,7 +242,7 @@ class MenstrualCycle {
   List<DateTime> upcomingPeriods({int count = 3}) {
     return List.generate(
       count,
-      (i) => currentCycleStart.add(Duration(days: cycleLength * (i + 1))),
+      (i) => _addDays(currentCycleStart, cycleLength * (i + 1)),
     );
   }
 }

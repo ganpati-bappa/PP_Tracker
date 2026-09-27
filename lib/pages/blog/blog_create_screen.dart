@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:pp_tracker/models/blog/blog.dart';
 import 'package:pp_tracker/models/blog/blog_models.dart';
 import 'package:pp_tracker/components/blog/blog_category_style.dart';
-import 'package:pp_tracker/state/auth_controller.dart';
 import 'package:pp_tracker/state/blog_controller.dart';
 import 'package:pp_tracker/theme/app_theme.dart';
 
@@ -35,7 +34,6 @@ class _BlogCreateScreenState extends State<BlogCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final controller = context.read<BlogController>();
-    final auth = context.read<AuthController>();
     final author = controller.currentUser;
     final now = DateTime.now();
 
@@ -58,8 +56,6 @@ class _BlogCreateScreenState extends State<BlogCreateScreen> {
     );
 
     await controller.repository.upsertBlog(newBlog);
-    // Keep the user's `posts` roll up on their users-collection doc in sync.
-    await auth.recordPostCreated();
     controller.refresh();
     if (mounted) {
       Navigator.pop(context);

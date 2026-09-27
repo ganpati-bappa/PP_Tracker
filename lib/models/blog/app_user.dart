@@ -32,18 +32,14 @@ class AppUser {
   /// Last time we saw this user active — refreshed on each sign-in.
   final DateTime? lastActiveAt;
 
-  // ---- Denormalized activity counters (kept on the users doc) -------------
-  // The full content lives in its own collections (blogs where authorId == id,
-  // comments where userId == id); these counters make the profile cheap to
-  // render and are bumped via [UserRepository] when the user posts/comments.
-  final int postCount;
-  final int commentCount;
-  final int bookmarkCount;
-
-  /// Number of blogs this user has liked (rollup of the `likedBlogs` reverse
-  /// index). Added after the initial schema — [fromMap] defaults it to 0 so
-  /// documents written before it existed still deserialize cleanly.
-  final int likeCount;
+  // Activity relationships (authored blogs, likes, bookmarks, comments) are NOT
+  // denormalized onto the profile as counters/arrays. They live as their own
+  // collections/subcollections and are read by query — `blogs where authorId ==
+  // id`, `users/{id}/bookmarks`, `users/{id}/likedBlogs`, `comments where
+  // userId == id`. This keeps the profile document small, purely profile data,
+  // and free of write-amplification. If a profile ever needs "12 posts" style
+  // stats, prefer a Firestore `count()` aggregation over re-introducing
+  // counters that must be kept in sync on every write.
 
   /// Soft-deactivation flag. We never hard-delete a user (it would orphan their
   /// blogs/comments); deactivating hides them and blocks writes while keeping
@@ -66,10 +62,6 @@ class AppUser {
     this.credentials,
     required this.joinedAt,
     this.lastActiveAt,
-    this.postCount = 0,
-    this.commentCount = 0,
-    this.bookmarkCount = 0,
-    this.likeCount = 0,
     this.isActive = true,
     this.metadata = const {},
   });
@@ -99,10 +91,6 @@ class AppUser {
     bool? isExpert,
     String? credentials,
     DateTime? lastActiveAt,
-    int? postCount,
-    int? commentCount,
-    int? bookmarkCount,
-    int? likeCount,
     bool? isActive,
     Map<String, dynamic>? metadata,
   }) {
@@ -118,10 +106,6 @@ class AppUser {
       credentials: credentials ?? this.credentials,
       joinedAt: joinedAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
-      postCount: postCount ?? this.postCount,
-      commentCount: commentCount ?? this.commentCount,
-      bookmarkCount: bookmarkCount ?? this.bookmarkCount,
-      likeCount: likeCount ?? this.likeCount,
       isActive: isActive ?? this.isActive,
       metadata: metadata ?? this.metadata,
     );
@@ -139,10 +123,6 @@ class AppUser {
         'credentials': credentials,
         'joinedAt': joinedAt.toIso8601String(),
         'lastActiveAt': lastActiveAt?.toIso8601String(),
-        'postCount': postCount,
-        'commentCount': commentCount,
-        'bookmarkCount': bookmarkCount,
-        'likeCount': likeCount,
         'isActive': isActive,
         'metadata': metadata,
       };
@@ -160,10 +140,6 @@ class AppUser {
         joinedAt: DateTime.tryParse(map['joinedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
         lastActiveAt: DateTime.tryParse(map['lastActiveAt'] as String? ?? ''),
-        postCount: (map['postCount'] as num?)?.toInt() ?? 0,
-        commentCount: (map['commentCount'] as num?)?.toInt() ?? 0,
-        bookmarkCount: (map['bookmarkCount'] as num?)?.toInt() ?? 0,
-        likeCount: (map['likeCount'] as num?)?.toInt() ?? 0,
         isActive: map['isActive'] as bool? ?? true,
         metadata:
             (map['metadata'] as Map?)?.cast<String, dynamic>() ?? const {},

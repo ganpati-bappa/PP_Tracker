@@ -20,30 +20,27 @@ void main() {
         credentials: 'Mathematician',
         joinedAt: DateTime.utc(2024, 1, 2),
         lastActiveAt: DateTime.utc(2024, 5, 6),
-        postCount: 3,
-        commentCount: 7,
-        bookmarkCount: 2,
-        likeCount: 11,
       );
       final restored = AppUser.fromMap(user.toMap());
       expect(restored.id, user.id);
-      expect(restored.likeCount, 11);
+      expect(restored.email, 'ada@example.com');
+      expect(restored.credentials, 'Mathematician');
       expect(restored.isActive, true);
       expect(restored.isExpert, true);
       expect(restored.joinedAt, user.joinedAt);
     });
 
     test('missing newly-added fields default safely (legacy document)', () {
-      // A document written before likeCount/isActive existed.
+      // A document written before isActive existed still deserializes.
       final legacy = {
         'id': 'old',
         'displayName': 'Legacy User',
         'joinedAt': DateTime.utc(2020).toIso8601String(),
       };
       final user = AppUser.fromMap(legacy);
-      expect(user.likeCount, 0);
       expect(user.isActive, true);
-      expect(user.bookmarkCount, 0);
+      expect(user.isExpert, false);
+      expect(user.metadata, isEmpty);
     });
   });
 

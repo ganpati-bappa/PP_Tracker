@@ -188,9 +188,10 @@ class FirestoreBlogRepository implements BlogRepository {
 
   @override
   Future<void> setBookmark(String blogId, String userId, bool bookmarked) {
+    // A bookmark is a single relationship document under the user's private
+    // subcollection — its existence *is* the bookmark. No counter to maintain.
     final bookmarkRef =
         Fs.userRef(_db, userId).collection(Fs.bookmarks).doc(blogId);
-    final userRef = Fs.userRef(_db, userId);
 
     return runWrite(
       () => _db.runTransaction((tx) async {
@@ -200,12 +201,8 @@ class FirestoreBlogRepository implements BlogRepository {
             'blogRef': Fs.blogRef(_db, blogId),
             'createdAt': FieldValue.serverTimestamp(),
           });
-          tx.set(userRef, {'bookmarkCount': FieldValue.increment(1)},
-              SetOptions(merge: true));
         } else if (!bookmarked && existing.exists) {
           tx.delete(bookmarkRef);
-          tx.set(userRef, {'bookmarkCount': FieldValue.increment(-1)},
-              SetOptions(merge: true));
         }
       }),
       context: 'save this bookmark',
@@ -224,6 +221,39 @@ class FirestoreBlogRepository implements BlogRepository {
     final ids = snap.docs.map((d) => d.id).toList();
     final blogs = await _fetchBlogsByIds(ids);
     return _decorateBlogs(blogs);
+  }
+
+  @override
+  Future<List<Blog>> fetchLikedBlogs(String userId, {int limit = 50}) async {
+    final snap = await readWithCacheFallback(
+      (opts) => Fs.userRef(_db, userId)
+          .collection(Fs.likedBlogs)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get(opts),
+      context: 'load blogs you liked',
+    );
+    final ids = snap.docs.map((d) => d.id).toList();
+    return _decorateBlogs(await _fetchBlogsByIds(ids));
+  }
+
+  @override
+  Future<List<Blog>> fetchAuthoredBlogs(String userId, {int limit = 50}) async {
+    // Relationship by query — no array on the user doc. Backed by the
+    // (authorId ASC, publishedAt DESC) composite index in firestore.indexes.json.
+    final snap = await readWithCacheFallback(
+      (opts) => _blogs
+          .where('authorId', isEqualTo: userId)
+          .orderBy('publishedAt', descending: true)
+          .limit(limit)
+          .get(opts),
+      context: 'load your articles',
+    );
+    final authored = snap.docs
+        .where((d) => d.data()['isDeleted'] != true)
+        .map(FirestoreConverters.blogFromFirestore)
+        .toList();
+    return _decorateBlogs(authored);
   }
 
   @override
@@ -252,7 +282,9 @@ class FirestoreBlogRepository implements BlogRepository {
             'createdAt': FieldValue.serverTimestamp(),
           });
         }
-        // Keep the denormalized counters in the same atomic unit.
+        // The blog's own like tally is a legitimate denormalized counter (it's
+        // rendered on every card), kept in the same atomic unit as the edge.
+        // No per-user counter — "blogs I liked" is the likedBlogs subcollection.
         tx.set(
           blogRef,
           {
@@ -261,8 +293,6 @@ class FirestoreBlogRepository implements BlogRepository {
           },
           SetOptions(merge: true),
         );
-        tx.set(userRef, {'likeCount': FieldValue.increment(delta)},
-            SetOptions(merge: true));
       }),
       context: 'update your like',
     );

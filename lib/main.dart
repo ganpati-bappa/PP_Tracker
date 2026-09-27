@@ -10,6 +10,7 @@ import 'package:pp_tracker/models/user_model.dart';
 import 'package:pp_tracker/repositories/blog_repository.dart';
 import 'package:pp_tracker/repositories/firestore_blog_repository.dart';
 import 'package:pp_tracker/repositories/firestore_seeder.dart';
+import 'package:pp_tracker/repositories/cycle_profile_store.dart';
 import 'package:pp_tracker/repositories/firestore_user_repository.dart';
 import 'package:pp_tracker/repositories/local_user_repository.dart';
 import 'package:pp_tracker/repositories/mock_blog_repository.dart';
@@ -110,9 +111,26 @@ class _AuthenticatedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Guests live entirely in SharedPreferences; signed-in users also mirror
+    // their (private) cycle profile to Firestore for cross-device sync.
+    final useRemote = !user.isAnonymous && AppConfig.usesFirestore;
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserModel()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final model = UserModel(
+              uid: user.id,
+              profileStore: CycleProfileStore(useRemote: useRemote),
+            );
+            // Personalise the greeting from the signed-in identity.
+            final name = user.displayName.trim();
+            if (name.isNotEmpty && name.toLowerCase() != 'guest') {
+              model.preferences.name = name;
+            }
+            return model;
+          },
+        ),
         ChangeNotifierProvider(create: (_) {
           final controller = OnboardingController();
           controller.initialize();
@@ -137,16 +155,42 @@ class _AuthenticatedApp extends StatelessWidget {
   }
 }
 
+/// Branded launch/loading screen shown while auth and on-device state resolve.
+///
+/// Deliberately identical to the native launch screen (rose background + white
+/// spa/lotus, see `flutter_native_splash` in pubspec) so the hand-off from the
+/// OS splash into Flutter is seamless — no flash of a different design.
 class _Splash extends StatelessWidget {
   const _Splash();
+
+  // The exact light background used by the native splash
+  // (windowSplashScreenBackground / flutter_native_splash `color`).
+  static const Color _splashBg = Color(0xFFFBF3F1);
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _splashBg,
       body: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(AppColors.primary),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The rose badge + white lotus, matching the native launch screen.
+            Image(
+              image: AssetImage('assets/icon/splash_lotus_badge.png'),
+              width: 168,
+              height: 168,
+            ),
+            SizedBox(height: 28),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                valueColor: AlwaysStoppedAnimation(AppColors.primary),
+              ),
+            ),
+          ],
         ),
       ),
     );
